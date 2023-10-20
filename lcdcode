@@ -1,0 +1,148 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Keypad.h>
+
+LiquidCrystal_I2C lcd1(32, 16, 2);  // Address 0x27, 16 columns, 2 rows
+LiquidCrystal_I2C lcd2(33, 16, 2);  // Address 0x26
+LiquidCrystal_I2C lcd3(34, 16, 2);  // Address 0x25
+LiquidCrystal_I2C lcd4(35, 16, 2);  // Address 0x24
+
+const byte ROWS = 4;
+const byte COLS = 4;
+char keys[ROWS][COLS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+byte rowPins[ROWS] = {8, 9, 10, 11};  // Rows 0 through 3
+byte colPins[COLS] = {4, 5, 6, 7};    // Columns 0 through 3
+
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+String messages[] = {
+  "COLLEGE NEEDS CANTEEN SOON",
+  "UVCE-STUDENTS NEED CRICKET GROUND",
+  "STATE-GOVERNMENT SHOULD FUND UVCE!!",
+  "EXAMINATIONS CANNOT BE DELAYED!!"
+};
+
+int currentMessageIndex = 0;
+
+void setup() {
+  lcd1.init();
+  lcd1.backlight();
+  lcd2.init();
+  lcd2.backlight();
+  lcd3.init();
+  lcd3.backlight();
+  lcd4.init();
+  lcd4.backlight();
+  
+  displayCurrentMessage();
+}
+
+void loop() {
+  char key = keypad.getKey();
+  if (key) {
+    // Change messages using the keypad
+    if (key == '1') {
+      currentMessageIndex = 0;
+      displayCurrentMessage();
+    } else if (key == '2') {
+      currentMessageIndex = 1;
+      displayCurrentMessage();
+    } else if (key == '3') {
+      currentMessageIndex = 2;
+      displayCurrentMessage();
+    } else if (key == '4') {
+      currentMessageIndex = 3;
+      displayCurrentMessage();
+    }
+  }
+}
+
+void displayCurrentMessage() {
+  // Display the current message on all four LCDs
+  String currentMessage = messages[currentMessageIndex];
+  int wordCount = countWords(currentMessage);
+  int lcdCount = min(wordCount, 4);
+  
+  for (int i = 0; i < lcdCount; i++) {
+    String currentWord = getWord(currentMessage, i);
+    clearAndDisplayOnLCD(i + 1, currentWord);
+  }
+  
+  // Clear any remaining LCDs
+  for (int i = lcdCount; i < 4; i++) {
+    clearAndDisplayOnLCD(i + 1, "");
+  }
+}
+
+String getWord(String message, int index) {
+  // Extract the word at the specified index from the message
+  int wordCount = 0;
+  String word = "";
+  
+  for (int i = 0; i < message.length(); i++) {
+    char c = message[i];
+    
+    if (c == ' ') {
+      wordCount++;
+      if (wordCount == index) {
+        break;
+      }
+      word = "";
+    } else {
+      word += c;
+    }
+  }
+  
+  return word;
+}
+
+int countWords(String message) {
+  // Count the number of words in the message
+  int wordCount = 0;
+  bool inWord = false;
+  
+  for (int i = 0; i < message.length(); i++) {
+    char c = message[i];
+    
+    if (c == ' ') {
+      inWord = false;
+    } else if (!inWord) {
+      inWord = true;
+      wordCount++;
+    }
+  }
+  
+  return wordCount;
+}
+
+void clearAndDisplayOnLCD(int lcdNumber, String message) {
+  // Clear and display a message on the specified LCD
+  LiquidCrystal_I2C *lcd;
+  
+  switch (lcdNumber) {
+    case 1:
+      lcd = &lcd1;
+      break;
+    case 2:
+      lcd = &lcd2;
+      break;
+    case 3:
+      lcd = &lcd3;
+      break;
+    case 4:
+      lcd = &lcd4;
+      break;
+    default:
+      return;
+  }
+  
+  lcd->clear();
+  lcd->setCursor(0, 0);
+  lcd->print(message);
+  delay(100);
+}
